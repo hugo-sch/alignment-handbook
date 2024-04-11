@@ -1,6 +1,6 @@
 #!/bin/bash
 # Define an array containing the base configs we wish to fine tune
-configs=("zephyr" "openhermes")
+configs=("aftonposten")
 # Define an array of loss types
 loss_types=("sigmoid" "kto_pair" "ipo")
 # Define an array of beta values
@@ -18,7 +18,7 @@ for config in "${configs[@]}"; do
 
             # Submit the job
             sbatch --job-name=${job_name} recipes/launch.slurm pref_align_scan dpo $config deepspeed_zero3 \
-            "--beta=${beta} --loss_type=${loss_type} --output_dir=data/$config-7b-align-scan-${loss_type}-beta-${beta} --hub_model_revision=${model_revision}"
+            "--beta=${beta} --loss_type=${loss_type} --output_dir=data/$config-6b-align-scan-${loss_type}-beta-${beta} --hub_model_revision=${model_revision}"
         done
     done
 done
