@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import tiktoken
 from typing import List, Literal, Optional
 
 from datasets import DatasetDict, concatenate_datasets, load_dataset, load_from_disk
@@ -37,6 +38,25 @@ def maybe_insert_system_message(messages, tokenizer):
     if "system" in chat_template or "<|im_start|>" in chat_template:
         messages.insert(0, {"role": "system", "content": ""})
 
+def truncate_prompt(example, max_prompt_length, task: Literal["sft", "generation", "rm", "dpo"]):
+    if task == "dpo":
+        prompt_messages = example["chosen"][:-1]
+        truncated_messages = []
+        for prompt_message in prompt_messages:
+            string = prompt_message
+            encoding = tiktoken.get_encoding("gpt2")
+            sentence_array = string.split('.')
+
+            while len(encoding.encode(string)) > max_prompt_length:
+                sentence_array.pop()
+                string = '.'.join(sentence_array)
+                
+            truncated_messages.append(string)
+                
+        example["chosen"] = truncated_messages + example["chosen"][-1:]
+        example["rejected"] = truncated_messages + example["rejected"][-1:]
+
+    return example
 
 def apply_chat_template(
     example,

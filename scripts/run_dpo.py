@@ -27,7 +27,7 @@ from alignment import (
     H4ArgumentParser,
     ModelArguments,
     apply_chat_template,
-    decontaminate_humaneval,
+    truncate_prompt,
     get_checkpoint,
     get_datasets,
     get_kbit_device_map,
@@ -133,6 +133,20 @@ def main():
     data_args.truncation_side = "left"  # Truncate from left to ensure we don't lose labels in final turn
     tokenizer = get_tokenizer(model_args, data_args)
 
+    ######################
+    # Limit prompt lengths
+    ######################
+    raw_datasets = raw_datasets.map(
+        truncate_prompt,
+        fn_kwargs={
+            "max_prompt_length": training_args.max_prompt_length - 10,
+            "task": "dpo",
+        },
+        num_proc=data_args.preprocessing_num_workers,
+        remove_columns=column_names,
+        desc="Truncating prompts",
+    )
+
     #####################
     # Apply chat template
     #####################
@@ -146,23 +160,6 @@ def main():
         num_proc=data_args.preprocessing_num_workers,
         remove_columns=column_names,
         desc="Formatting comparisons with prompt template",
-    )
-
-    ##########################
-    # Decontaminate benchmarks
-    ##########################
-    num_raw_train_samples = len(raw_datasets["train"])
-    raw_datasets = raw_datasets.filter(
-        decontaminate_humaneval,
-        fn_kwargs={"text_column": "text_chosen"},
-        batched=True,
-        batch_size=10_000,
-        num_proc=1,
-        desc="Decontaminating HumanEval samples",
-    )
-    num_filtered_train_samples = num_raw_train_samples - len(raw_datasets["train"])
-    logger.info(
-        f"Decontaminated {num_filtered_train_samples} ({num_filtered_train_samples/num_raw_train_samples * 100:.2f}%) samples from the training set."
     )
 
     # Replace column names with what TRL needs, text_chosen -> chosen and text_rejected -> rejected
