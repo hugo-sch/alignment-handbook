@@ -27,7 +27,6 @@ from alignment import (
     H4ArgumentParser,
     ModelArguments,
     apply_chat_template,
-    truncate_prompt,
     get_checkpoint,
     get_datasets,
     get_kbit_device_map,
@@ -81,6 +80,26 @@ def generate_output(input_prompt, model, tokenizer, max_output_length=25):
         )
     tokenizer_output = tokenizer.decode(generation_output[0], skip_special_tokens=True)
     logger.info(tokenizer_output)
+
+def truncate_prompt(example, max_prompt_length, task: Literal["sft", "generation", "rm", "dpo"]):
+    if task == "dpo":
+        prompt_messages = example["chosen"][:-1]
+        truncated_messages = []
+        for prompt_message in prompt_messages:
+            string = prompt_message
+            encoding = tiktoken.get_encoding("gpt2")
+            sentence_array = string.split('.')
+
+            while len(encoding.encode(string)) > max_prompt_length:
+                sentence_array.pop()
+                string = '.'.join(sentence_array)
+                
+            truncated_messages.append(string)
+                
+        example["chosen"] = truncated_messages + example["chosen"][-1:]
+        example["rejected"] = truncated_messages + example["rejected"][-1:]
+
+    return example
 
 def main():
     parser = H4ArgumentParser((ModelArguments, DataArguments, DPOConfig))
