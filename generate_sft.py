@@ -1,9 +1,7 @@
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel, PeftConfig
 
-input_text = """<|system|>
-<|endoftext|>
-<|user|>[TEXT] I en sjokkerende avsløring har nylige etterforskninger brakt for dagen en omfattende svindelsak hvor milliarder av kroner, øremerket offentlige tjenester, er blitt ulovlig omdirigert inn i lommene på korrupte tjenestemenn og kvinner. Denne oppsiktsvekkende utviklingen har vekket stor offentlig forargelse og kaster en mørk skygge over det offentlige tillitsforholdet.
+input_text = """[TEXT] I en sjokkerende avsløring har nylige etterforskninger brakt for dagen en omfattende svindelsak hvor milliarder av kroner, øremerket offentlige tjenester, er blitt ulovlig omdirigert inn i lommene på korrupte tjenestemenn og kvinner. Denne oppsiktsvekkende utviklingen har vekket stor offentlig forargelse og kaster en mørk skygge over det offentlige tillitsforholdet.
 
 Ifølge rapporter fra Økokrim, begynte etterforskningen etter at det ble oppdaget uvanlige transaksjoner i flere departementers økonomisystemer. Detaljerte granskninger avslørte et komplekst nettverk av fiktive kontrakter, overfakturering og direkte tyveri, som strekker seg over flere år.
 
@@ -17,19 +15,19 @@ Regjeringen har svart på skandalen med løfter om gjennomsiktighet og reform. S
 
 "Vi vil ta alle nødvendige skritt for å gjenopprette det norske folkets tillit. Det er uakseptabelt at midler som er ment å tjene offentligheten, blir stjålet av de som er betrodd å forvalte dem," sa statsministeren i en offisiell uttalelse.
 
-Detaljene i etterforskningen er fortsatt under utvikling, og myndighetene har lovet å holde offentligheten løpende informert. Dette er en sak som vil fortsette å dominere nyhetsoverskriftene i Norge i tiden som kommer. [TITLE]<|endoftext|>
-<|assistant|>"""
+Detaljene i etterforskningen er fortsatt under utvikling, og myndighetene har lovet å holde offentligheten løpende informert. Dette er en sak som vil fortsette å dominere nyhetsoverskriftene i Norge i tiden som kommer. [TITLE]"""
 
-base_model = AutoModelForCausalLM.from_pretrained("data/ap-gpt-j-6b-sft-qlora")
+model_name = "data/ap-gpt-j-6b-sft-qlora-04-08"
+base_model = AutoModelForCausalLM.from_pretrained(model_name)
 
-peft_config = PeftConfig.from_pretrained("data/ap-gpt-j-6b-sft-qlora")
-base_model = PeftModel.from_pretrained(base_model, "data/ap-gpt-j-6b-sft-qlora", revision=peft_config.revision)
+peft_config = PeftConfig.from_pretrained(model_name)
+base_model = PeftModel.from_pretrained(base_model, model_name, revision=peft_config.revision)
 
-tokenizer = AutoTokenizer.from_pretrained("data/ap-gpt-j-6b-sft-qlora")
+tokenizer = AutoTokenizer.from_pretrained(model_name)
 tokenizer.padding_side = "left"
 
 input_ids = tokenizer.encode(input_text, return_tensors='pt')
 output = base_model.generate(input_ids, max_new_tokens=50, temperature=0.7, do_sample=True)
-output_text = tokenizer.decode(output[0])
+output_text = tokenizer.decode(output[0], skip_special_tokens=True)
 
 print(output_text)

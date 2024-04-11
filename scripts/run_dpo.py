@@ -19,7 +19,7 @@ import sys
 
 import torch
 import transformers
-from transformers import AutoModelForCausalLM, set_seed
+from transformers import AutoModelForCausalLM, set_seed, TrainerCallback
 
 from alignment import (
     DataArguments,
@@ -39,9 +39,48 @@ from alignment import (
 from peft import PeftConfig, PeftModel
 from trl import DPOTrainer
 
-
 logger = logging.getLogger(__name__)
 
+ARTICLE_TEXT_EXAMPLE = """[TEXT] I en sjokkerende avsløring har nylige etterforskninger brakt for dagen en omfattende svindelsak hvor milliarder av kroner, øremerket offentlige tjenester, er blitt ulovlig omdirigert inn i lommene på korrupte tjenestemenn og kvinner. Denne oppsiktsvekkende utviklingen har vekket stor offentlig forargelse og kaster en mørk skygge over det offentlige tillitsforholdet. Ifølge rapporter fra Økokrim, begynte etterforskningen etter at det ble oppdaget uvanlige transaksjoner i flere departementers økonomisystemer. Detaljerte granskninger avslørte et komplekst nettverk av fiktive kontrakter, overfakturering og direkte tyveri, som strekker seg over flere år. "Vi står overfor en av de mest sofistikerte og omfattende svindeloperasjonene i norsk historie," uttalte Økokrim-sjefen under en pressekonferanse. "Pengene som var ment for å styrke offentlige tjenester som helsevesen, utdanning og infrastruktur, har i stedet blitt brukt til å berike en liten gruppe individer." Det er avdekket at svindelen involverte flere nivåer av regjeringsansatte, fra lavere nivå administrativt personell til høyere tjenestemenn med tilgang til omfattende fond. Disse aktørene har angivelig samarbeidet om å omgå de økonomiske kontrollene som er på plass for å beskytte offentlige midler. Reaksjonene fra offentligheten har vært av både sjokk og vrede. Mange krever øyeblikkelig handling og strenge straffer for de involverte, samt omfattende reformer for å gjenopprette integriteten i offentlig forvaltning. Regjeringen har svart på skandalen med løfter om gjennomsiktighet og reform. Statsministeren har annonsert en uavhengig undersøkelse for å få full oversikt over omfanget av svindelen, samt tiltak for å styrke det økonomiske tilsynet. "Vi vil ta alle nødvendige skritt for å gjenopprette det norske folkets tillit. Det er uakseptabelt at midler som er ment å tjene offentligheten, blir stjålet av de som er betrodd å forvalte dem," sa statsministeren i en offisiell uttalelse. Detaljene i etterforskningen er fortsatt under utvikling, og myndighetene har lovet å holde offentligheten løpende informert. Dette er en sak som vil fortsette å dominere nyhetsoverskriftene i Norge i tiden som kommer. [TITLE] """
+
+class GenerationCallback(TrainerCallback):
+    def __init__(self, input_text, tokenizer, trainer, max_output_length, formatting_func=None):
+        super().__init__()
+        self.input_text = input_text
+        self.tokenizer = tokenizer
+        self.trainer = trainer
+        self.max_output_length = max_output_length
+        self.formatting_func = formatting_func
+
+    def _format_prompt(self, prompt):
+        return self.formatting_func(prompt) if self.formatting_func is not None else prompt
+
+    def on_step_begin(self, _args, _state, _control, **kwargs):
+        input_prompt = self._format_prompt(self.input_text)
+        
+        with torch.no_grad():
+            generate_output(
+                input_prompt, self.trainer.model, self.tokenizer, self.max_output_length)
+
+def generate_output(input_prompt, model, tokenizer, max_output_length=25):
+    input_tokens = tokenizer(input_prompt, return_tensors="pt")["input_ids"].to("cuda")
+    
+    with torch.cuda.amp.autocast():
+        generation_output = model.generate(
+            input_ids=input_tokens,
+            min_new_tokens=2,
+            max_new_tokens=max_output_length,
+            do_sample=True,
+            top_k=10,
+            top_p=0.9,
+            temperature=0.3,
+            repetition_penalty=1.15,
+            num_return_sequences=1,
+            eos_token_id=tokenizer.eos_token_id,
+            pad_token_id=tokenizer.eos_token_id,
+        )
+    tokenizer_output = tokenizer.decode(generation_output[0], skip_special_tokens=True)
+    logger.info(tokenizer_output)
 
 def main():
     parser = H4ArgumentParser((ModelArguments, DataArguments, DPOConfig))

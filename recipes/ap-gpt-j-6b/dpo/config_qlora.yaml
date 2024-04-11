@@ -1,5 +1,5 @@
 # Model arguments
-model_name_or_path: data/ap-gpt-j-6b-sft-qlora
+model_name_or_path: data/ap-gpt-j-6b-sft-qlora-04-08
 torch_dtype: bfloat16
 use_flash_attention_2: false
 
