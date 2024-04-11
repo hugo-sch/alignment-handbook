@@ -19,6 +19,7 @@ import sys
 
 import torch
 import transformers
+import tiktoken
 from transformers import AutoModelForCausalLM, set_seed, TrainerCallback
 
 from alignment import (
@@ -81,7 +82,7 @@ def generate_output(input_prompt, model, tokenizer, max_output_length=25):
     tokenizer_output = tokenizer.decode(generation_output[0], skip_special_tokens=True)
     logger.info(tokenizer_output)
 
-def truncate_prompt(example, max_prompt_length, task: Literal["sft", "generation", "rm", "dpo"]):
+def truncate_prompt(example, max_prompt_length, task):
     if task == "dpo":
         prompt_messages = example["chosen"][:-1]
         truncated_messages = []
