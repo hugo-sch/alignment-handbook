@@ -16,10 +16,12 @@ for config in "${configs[@]}"; do
             job_name="$config_${loss_type}_beta_${beta}"
             model_revision="${loss_type}-${beta}"
 
+            cd ~/alignment-handbook
+
+            # Launch the job
             ACCELERATE_LOG_LEVEL=info setsid nohup accelerate launch \
-            --config_file ~/alignment-handbook/recipes/accelerate_configs/multi_gpu.yaml \
-            --num_processes=1 ~/alignment-handbook/scripts/run_dpo.py \
-            ~/alignment-handbook/recipes/ap-gpt-j-6b/dpo/config_qlora.yaml \
+            --config_file recipes/accelerate_configs/multi_gpu.yaml \
+            --num_processes=1 scripts/run_dpo.py recipes/ap-gpt-j-6b/dpo/config_qlora.yaml \
             --use_flash_attention_2=false --beta=${beta} --loss_type=${loss_type} \
             --output_dir=data/$config-6b-align-scan-${loss_type}-beta-${beta} \
             --hub_model_revision=${model_revision}
