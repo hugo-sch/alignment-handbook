@@ -87,15 +87,15 @@ def truncate_prompt(example, max_prompt_length, task):
         prompt_messages = example["chosen"][:-1]
         truncated_messages = []
         for prompt_message in prompt_messages:
-            string = prompt_message
+            truncated_string = prompt_message["content"]
             encoding = tiktoken.get_encoding("gpt2")
-            sentence_array = string.split('.')
+            sentence_array = truncated_string.split('.')
 
-            while len(encoding.encode(string)) > max_prompt_length:
+            while len(encoding.encode(truncated_string)) > max_prompt_length:
                 sentence_array.pop()
-                string = '.'.join(sentence_array)
+                truncated_string = '.'.join(sentence_array)
                 
-            truncated_messages.append(string)
+            truncated_messages.append({"content": truncated_string, "role": prompt_message["role"]})
                 
         example["chosen"] = truncated_messages + example["chosen"][-1:]
         example["rejected"] = truncated_messages + example["rejected"][-1:]
@@ -163,7 +163,6 @@ def main():
             "task": "dpo",
         },
         num_proc=data_args.preprocessing_num_workers,
-        remove_columns=column_names,
         desc="Truncating prompts",
     )
 

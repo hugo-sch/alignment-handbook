@@ -9,11 +9,8 @@ betas=("0.01" "0.1" "0.2" "0.3" "0.4" "0.5" "0.6" "0.7" "0.8" "0.9")
 # Outer loop for loss types
 for config in "${configs[@]}"; do
     for loss_type in "${loss_types[@]}"; do
-
         # Inner loop for beta values
         for beta in "${betas[@]}"; do
-            # Determine the job name and model revision based on loss type
-            job_name="$config_${loss_type}_beta_${beta}"
             model_revision="${loss_type}-${beta}"
 
             cd ~/alignment-handbook
@@ -21,10 +18,12 @@ for config in "${configs[@]}"; do
             # Launch the job
             ACCELERATE_LOG_LEVEL=info setsid nohup accelerate launch \
             --config_file recipes/accelerate_configs/multi_gpu.yaml \
-            --num_processes=1 scripts/run_dpo.py recipes/ap-gpt-j-6b/dpo/config_qlora.yaml \
-            --use_flash_attention_2=false --beta=${beta} --loss_type=${loss_type} \
+            --num_processes=1 \
+            scripts/run_dpo.py recipes/pref_align_scan/dpo/config_aftonposten.yaml \
             --output_dir=data/$config-6b-align-scan-${loss_type}-beta-${beta} \
-            --hub_model_revision=${model_revision}
+            --hub_model_revision=${model_revision} \
+            --use_flash_attention_2=false --beta=${beta} --loss_type=${loss_type}
+            # Above line causes error (Cause likelihood: beta>loss_type>ufa2)
         done
     done
 done
