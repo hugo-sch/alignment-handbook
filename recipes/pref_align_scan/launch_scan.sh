@@ -6,14 +6,14 @@ loss_types=("sigmoid" "kto_pair" "ipo")
 # Define an array of beta values
 betas=("0.01" "0.1" "0.2" "0.3" "0.4" "0.5" "0.6" "0.7" "0.8" "0.9")
 
+cd ~/alignment-handbook
+
 # Outer loop for loss types
 for config in "${configs[@]}"; do
     for loss_type in "${loss_types[@]}"; do
         # Inner loop for beta values
         for beta in "${betas[@]}"; do
             model_revision="${loss_type}-${beta}"
-
-            cd ~/alignment-handbook
 
             # Launch the job
             ACCELERATE_LOG_LEVEL=info setsid nohup accelerate launch \
@@ -22,8 +22,7 @@ for config in "${configs[@]}"; do
             scripts/run_dpo.py recipes/pref_align_scan/dpo/config_aftonposten.yaml \
             --output_dir=data/$config-6b-align-scan-${loss_type}-beta-${beta} \
             --hub_model_revision=${model_revision} \
-            --use_flash_attention_2=false --beta=${beta} --loss_type=${loss_type}
-            # Above line causes error (Cause likelihood: beta>loss_type>ufa2)
+            --loss_type=${loss_type} --use_flash_attention_2=false --beta=${beta}
         done
     done
 done
