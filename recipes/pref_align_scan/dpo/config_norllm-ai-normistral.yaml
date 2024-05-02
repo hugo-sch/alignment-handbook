@@ -1,5 +1,5 @@
 # Model arguments
-model_name_or_path: data/ap-gpt-j-6b-sft-qlora-04-08
+model_name_or_path: data/norllm-ai-normistral-7b-sft-qlora
 torch_dtype: null
 use_flash_attention_2: false
 
@@ -38,16 +38,16 @@ gradient_accumulation_steps: 2
 gradient_checkpointing: true
 gradient_checkpointing_kwargs:
   use_reentrant: false
-hub_model_id: aftonposten-6b-align-scan
+hub_model_id: norllm-ai-normistral-7b-align-scan
 hub_model_revision: dpo-beta-Z
 learning_rate: 5.0e-6
 logging_steps: 10
 lr_scheduler_type: cosine
 max_length: 1024
 max_prompt_length: 924
-num_train_epochs: 4
+num_train_epochs: 1
 optim: adamw_torch
-output_dir: data_lr5e-6/aftonposten-6b-align-scan-dpo-beta-X
+output_dir: data_lr5e-6/norllm-ai-normistral-7b-align-scan-dpo-beta-X
 per_device_train_batch_size: 4
 per_device_eval_batch_size: 8
 push_to_hub: true

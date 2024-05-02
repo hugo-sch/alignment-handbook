@@ -1,0 +1,3 @@
+[submodule "thesis-scripts"]
+	path = thesis-scripts
+	url = git@github.com:hugo-sch/thesis-scripts.git
